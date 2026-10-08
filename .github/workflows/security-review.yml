@@ -1,0 +1,55 @@
+# Runs on every pull request to main:
+#   1. scans the code in app/ with Bandit and Semgrep
+#   2. turns the results into a readable report
+#   3. posts the report as a comment on the pull request
+name: Security review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to post the comment
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scanners
+        run: pip install bandit semgrep
+
+      # "|| true" keeps the pipeline going when a scanner finds issues.
+      # The report script notices if a scanner produced no output.
+      - name: Run Bandit
+        run: bandit -r app -f json -o bandit.json || true
+
+      - name: Run Semgrep
+        run: semgrep scan --config p/python --metrics=off --json --output semgrep.json app || true
+
+      - name: Build the report
+        run: python reviewer/build_report.py bandit.json semgrep.json report.md findings.json
+
+      - name: Post the report on the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file report.md
+
+      - name: Save raw results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-results
+          path: |
+            bandit.json
+            semgrep.json
+            findings.json
+            report.md
