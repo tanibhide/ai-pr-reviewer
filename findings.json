@@ -27,6 +27,51 @@
     "code": "40     # Vulnerability 6: MD5 is far too weak for passwords.\n41     return hashlib.md5(password.encode()).hexdigest()\n"
   },
   {
+    "tool": "semgrep",
+    "rule": "jwt-python-hardcoded-secret",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 23,
+    "message": "Hardcoded JWT secret or private key is used. This is a Insufficiently Protected Credentials weakness: https://cwe.mitre.org/data/definitions/522.html Consider using an appropriate security mechanism to protect the credentials (e.g. keeping secrets in environment variables)",
+    "code": "requires login"
+  },
+  {
+    "tool": "semgrep",
+    "rule": "unverified-jwt-decode",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 27,
+    "message": "Detected JWT token decoded with 'verify=False'. This bypasses any integrity checks for the token which means the token could be tampered with by malicious actors. Ensure that the JWT token is verified.",
+    "code": "requires login"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B324 hashlib",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 31,
+    "message": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+    "code": "30 def store_password(password):\n31     return hashlib.sha1(password.encode()).hexdigest()\n32 \n"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B501 request_with_no_cert_validation",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 35,
+    "message": "Call to requests with verify=False disabling SSL certificate checks, security issue.",
+    "code": "34 def fetch_profile(url):\n35     return requests.get(url, verify=False).json()\n36 \n"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B202 tarfile_unsafe_members",
+    "severity": "HIGH",
+    "file": "app/upload.py",
+    "line": 26,
+    "message": "tarfile.extractall used without any validation. Please check and discard dangerous members.",
+    "code": "25     with tarfile.open(archive_path) as tar:\n26         tar.extractall(dest)\n27 \n"
+  },
+  {
     "tool": "bandit",
     "rule": "B608 hardcoded_sql_expressions",
     "severity": "MEDIUM",
@@ -70,6 +115,60 @@
     "line": 41,
     "message": "It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as scrypt. You can use `hashlib.scrypt`.",
     "code": "requires login"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B608 hardcoded_sql_expressions",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 18,
+    "message": "Possible SQL injection vector through string-based query construction.",
+    "code": "17     conn = sqlite3.connect(db_path)\n18     query = \"SELECT * FROM users WHERE name = '%s' AND pw = '%s'\" % (username, password)\n19     return conn.execute(query).fetchone()\n"
+  },
+  {
+    "tool": "semgrep",
+    "rule": "insecure-hash-algorithm-sha1",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 31,
+    "message": "Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.",
+    "code": "requires login"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B113 request_without_timeout",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 35,
+    "message": "Call to requests without timeout",
+    "code": "34 def fetch_profile(url):\n35     return requests.get(url, verify=False).json()\n36 \n"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B108 hardcoded_tmp_directory",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 43,
+    "message": "Probable insecure usage of temp file/directory.",
+    "code": "42 def home_dir():\n43     return os.environ.get(\"HOME\", \"/tmp\")\n"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B506 yaml_load",
+    "severity": "MEDIUM",
+    "file": "app/upload.py",
+    "line": 21,
+    "message": "Use of unsafe yaml load. Allows instantiation of arbitrary objects. Consider yaml.safe_load().",
+    "code": "20 def load_config(text):\n21     return yaml.load(text)\n22 \n"
+  },
+  {
+    "tool": "bandit",
+    "rule": "B108 hardcoded_tmp_directory",
+    "severity": "MEDIUM",
+    "file": "app/upload.py",
+    "line": 30,
+    "message": "Probable insecure usage of temp file/directory.",
+    "code": "29 def make_temp_name(name):\n30     return \"/tmp/\" + name\n31 \n"
   },
   {
     "tool": "bandit",

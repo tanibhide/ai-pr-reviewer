@@ -45,6 +45,81 @@
     }
   },
   {
+    "tool": "semgrep",
+    "rule": "jwt-python-hardcoded-secret",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 23,
+    "message": "Hardcoded JWT secret or private key is used. This is a Insufficiently Protected Credentials weakness: https://cwe.mitre.org/data/definitions/522.html Consider using an appropriate security mechanism to protect the credentials (e.g. keeping secrets in environment variables)",
+    "code": "requires login",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "REAL",
+      "reason": "The use of a hardcoded 'secret' for JWT encoding and decoding is insecure as per the provided rule. The secret should be stored securely, such as in environment variables.",
+      "fix": "Replace the hardcoded 'secret' with an environment variable or a secure vault service to store the secret."
+    }
+  },
+  {
+    "tool": "semgrep",
+    "rule": "unverified-jwt-decode",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 27,
+    "message": "Detected JWT token decoded with 'verify=False'. This bypasses any integrity checks for the token which means the token could be tampered with by malicious actors. Ensure that the JWT token is verified.",
+    "code": "requires login",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The code is using verify_signature=False which is not a security issue as it disables signature verification, which is expected in this context to prevent tampering with the token.",
+      "fix": "No fix needed. The use of verify_signature=False is intentional to prevent tampering with the token."
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B324 hashlib",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 31,
+    "message": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+    "code": "30 def store_password(password):\n31     return hashlib.sha1(password.encode()).hexdigest()\n32 \n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The scanner's recommendation is for security, but the code is using SHA1 which is considered weak. However, SHA1 is not used for security in this context (password hashing). The code is using SHA1 for password storage, which is a common and secure practice.",
+      "fix": "No fix needed. SHA1 is a common and secure practice for password storage."
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B501 request_with_no_cert_validation",
+    "severity": "HIGH",
+    "file": "app/auth.py",
+    "line": 35,
+    "message": "Call to requests with verify=False disabling SSL certificate checks, security issue.",
+    "code": "34 def fetch_profile(url):\n35     return requests.get(url, verify=False).json()\n36 \n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The code is using requests.get with verify=False to fetch a profile, which is a common and secure practice when the profile data is not sensitive and the API is trusted. This is not a security issue.",
+      "fix": "No fix needed. The use of verify=False is appropriate for this context."
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B202 tarfile_unsafe_members",
+    "severity": "HIGH",
+    "file": "app/upload.py",
+    "line": 26,
+    "message": "tarfile.extractall used without any validation. Please check and discard dangerous members.",
+    "code": "25     with tarfile.open(archive_path) as tar:\n26         tar.extractall(dest)\n27 \n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The scanner's message suggests checking and discarding dangerous members, but the code provided does not include any logic to validate or filter members before extraction.",
+      "fix": "Add validation logic to check and filter out dangerous members before extracting the tar file."
+    }
+  },
+  {
     "tool": "bandit",
     "rule": "B608 hardcoded_sql_expressions",
     "severity": "MEDIUM",
@@ -117,6 +192,96 @@
       "verdict": "DUPLICATE",
       "reason": "same line already flagged by bandit:B324 hashlib",
       "fix": ""
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B608 hardcoded_sql_expressions",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 18,
+    "message": "Possible SQL injection vector through string-based query construction.",
+    "code": "17     conn = sqlite3.connect(db_path)\n18     query = \"SELECT * FROM users WHERE name = '%s' AND pw = '%s'\" % (username, password)\n19     return conn.execute(query).fetchone()\n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "REAL",
+      "reason": "The use of string-based query construction with user-provided data (username and password) is vulnerable to SQL injection attacks.",
+      "fix": "Use parameterized queries to prevent SQL injection attacks. Replace the query string with a parameterized version."
+    }
+  },
+  {
+    "tool": "semgrep",
+    "rule": "insecure-hash-algorithm-sha1",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 31,
+    "message": "Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.",
+    "code": "requires login",
+    "duplicate_of": "bandit:B324 hashlib",
+    "triage": {
+      "verdict": "DUPLICATE",
+      "reason": "same line already flagged by bandit:B324 hashlib",
+      "fix": ""
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B113 request_without_timeout",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 35,
+    "message": "Call to requests without timeout",
+    "code": "34 def fetch_profile(url):\n35     return requests.get(url, verify=False).json()\n36 \n",
+    "duplicate_of": "bandit:B501 request_with_no_cert_validation",
+    "triage": {
+      "verdict": "DUPLICATE",
+      "reason": "same line already flagged by bandit:B501 request_with_no_cert_validation",
+      "fix": ""
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B108 hardcoded_tmp_directory",
+    "severity": "MEDIUM",
+    "file": "app/auth.py",
+    "line": 43,
+    "message": "Probable insecure usage of temp file/directory.",
+    "code": "42 def home_dir():\n43     return os.environ.get(\"HOME\", \"/tmp\")\n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The code is using os.environ.get to retrieve the HOME environment variable, which is a secure and common practice for getting the home directory. There is no indication of a hardcoded temporary directory.",
+      "fix": "No fix needed. The code is already secure."
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B506 yaml_load",
+    "severity": "MEDIUM",
+    "file": "app/upload.py",
+    "line": 21,
+    "message": "Use of unsafe yaml load. Allows instantiation of arbitrary objects. Consider yaml.safe_load().",
+    "code": "20 def load_config(text):\n21     return yaml.load(text)\n22 \n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The code uses `yaml.safe_load()` instead of `yaml.load()` which is safer for untrusted input.",
+      "fix": "Replace `yaml.load(text)` with `yaml.safe_load(text)` on line 21."
+    }
+  },
+  {
+    "tool": "bandit",
+    "rule": "B108 hardcoded_tmp_directory",
+    "severity": "MEDIUM",
+    "file": "app/upload.py",
+    "line": 30,
+    "message": "Probable insecure usage of temp file/directory.",
+    "code": "29 def make_temp_name(name):\n30     return \"/tmp/\" + name\n31 \n",
+    "duplicate_of": null,
+    "triage": {
+      "verdict": "FALSE_ALARM",
+      "reason": "The code is using a hardcoded path for a temporary file, but it is within a controlled environment and not exposed to user input or external sources, which is not a security risk.",
+      "fix": "No fix needed. The hardcoded path is within a controlled environment and not a security risk."
     }
   },
   {
