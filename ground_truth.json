@@ -1,0 +1,6 @@
+{
+  "_comment": "Lines in each file that contain a REAL vulnerability. Any scanner finding on one of these lines SHOULD be judged REAL; any finding on any other line (e.g. a bare import warning) SHOULD be judged FALSE_ALARM.",
+  "app/admin.py": [14, 20, 26, 31, 36, 41],
+  "app/auth.py":  [18, 23, 27, 31, 35],
+  "app/upload.py": [21, 26]
+}
